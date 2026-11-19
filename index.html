@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VTuber Studio</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body data-ui-hidden="false">
+  <main id="stage">
+    <div id="avatar"></div>
+  </main>
+
+  <aside id="panel">
+    <header>
+      <h1>VTuber Studio</h1>
+      <div class="dots">
+        <span id="cam-dot" class="dot" title="Webcam">CAM</span>
+        <span id="face-dot" class="dot" title="Face detected">FACE</span>
+        <span id="mic-dot" class="dot" title="Microphone">MIC</span>
+      </div>
+    </header>
+
+    <button id="start" class="primary">Start webcam + mic</button>
+    <p id="status" role="status"></p>
+
+    <section>
+      <h2>Voice</h2>
+      <div class="meter" title="Mic level (marker = noise gate)">
+        <div id="meter-fill"></div><div id="gate-mark"></div>
+      </div>
+      <label>Mouth driven by
+        <select id="lip-source">
+          <option value="both">Voice + camera</option>
+          <option value="voice">Voice only</option>
+          <option value="camera">Camera only</option>
+        </select>
+      </label>
+      <label>Mic sensitivity <output id="sensitivity-val"></output>
+        <input id="sensitivity" type="range" min="0.5" max="12" step="0.1">
+      </label>
+      <label>Noise gate <output id="gate-val"></output>
+        <input id="gate" type="range" min="0" max="0.1" step="0.001">
+      </label>
+    </section>
+
+    <section>
+      <h2>Motion</h2>
+      <label class="row"><input id="mirror" type="checkbox"> Mirror movement</label>
+      <label class="row"><input id="follow" type="checkbox"> Follow position in frame</label>
+      <label>Movement strength <output id="intensity-val"></output>
+        <input id="intensity" type="range" min="0.3" max="2" step="0.05">
+      </label>
+      <label>Smoothing <output id="smoothing-val"></output>
+        <input id="smoothing" type="range" min="0" max="0.9" step="0.01">
+      </label>
+      <button id="calibrate">Recalibrate center (C)</button>
+    </section>
+
+    <section>
+      <h2>Display</h2>
+      <label>Background
+        <select id="background">
+          <option value="badge">Badge (original)</option>
+          <option value="green">Green screen</option>
+          <option value="blue">Blue screen</option>
+          <option value="magenta">Magenta screen</option>
+          <option value="dark">Dark</option>
+          <option value="transparent">Transparent</option>
+          <option value="custom">Custom color</option>
+        </select>
+      </label>
+      <input id="custom-color" type="color" hidden>
+      <label class="row"><input id="show-preview" type="checkbox"> Show webcam preview</label>
+      <label class="row"><input id="show-mesh" type="checkbox"> Show tracking points</label>
+      <button id="hide-ui">Hide controls for capture (H)</button>
+    </section>
+
+    <footer>
+      Keys: <kbd>H</kbd> hide UI · <kbd>C</kbd> recalibrate · <kbd>M</kbd> mirror · <kbd>B</kbd> blush
+    </footer>
+  </aside>
+
+  <div id="preview" data-mirror="true">
+    <video id="cam" playsinline muted></video>
+    <canvas id="overlay"></canvas>
+  </div>
+
+  <button id="show-ui" title="Show controls (H)">⚙</button>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
