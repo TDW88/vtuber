@@ -24,6 +24,13 @@
     <button id="start" class="primary">Start webcam + mic</button>
     <p id="status" role="status"></p>
 
+    <section class="meet">
+      <h2>Google Meet / video calls</h2>
+      <button id="meet-setup">Set up for Google Meet</button>
+      <button id="open-output">Open avatar output window</button>
+      <p class="hint">Capture the 1280×720 “VTuber Output” window with OBS → Start Virtual Camera → choose <b>OBS Virtual Camera</b> in Meet’s camera settings. Use headphones so call audio doesn’t move the mouth.</p>
+    </section>
+
     <section>
       <h2>Voice</h2>
       <div class="meter" title="Mic level (marker = noise gate)">
@@ -46,13 +53,21 @@
 
     <section>
       <h2>Motion</h2>
-      <label class="row"><input id="mirror" type="checkbox"> Mirror movement</label>
+      <label class="row"><input id="mirror" type="checkbox"> Mirror movement <span class="hint">(off for calls)</span></label>
       <label class="row"><input id="follow" type="checkbox"> Follow position in frame</label>
       <label>Movement strength <output id="intensity-val"></output>
         <input id="intensity" type="range" min="0.3" max="2" step="0.05">
       </label>
       <label>Smoothing <output id="smoothing-val"></output>
         <input id="smoothing" type="range" min="0" max="0.9" step="0.01">
+      </label>
+      <label>Tracking rate
+        <select id="track-fps">
+          <option value="15">15 fps (lightest)</option>
+          <option value="24">24 fps (recommended for calls)</option>
+          <option value="30">30 fps</option>
+          <option value="60">60 fps (smoothest)</option>
+        </select>
       </label>
       <button id="calibrate">Recalibrate center (C)</button>
     </section>
@@ -62,6 +77,7 @@
       <label>Background
         <select id="background">
           <option value="badge">Badge (original)</option>
+          <option value="gradient">Gradient (full frame)</option>
           <option value="green">Green screen</option>
           <option value="blue">Blue screen</option>
           <option value="magenta">Magenta screen</option>

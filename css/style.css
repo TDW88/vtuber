@@ -146,3 +146,16 @@ body[data-ui-hidden="true"] #show-ui:hover { opacity: 0.9; }
   #panel { position: relative; width: auto; border-left: 0; }
   #preview { width: 140px; }
 }
+
+/* ---------- Meet / call helpers ---------- */
+.hint { margin: 0; font-size: 12px; color: var(--muted); font-weight: normal; }
+section.meet { border: 1px solid #4a3a85; }
+
+/* ---------- output window (OBS capture → virtual camera) ---------- */
+body[data-output="true"] #stage { inset: 0; overflow: hidden; }
+body[data-output="true"] #avatar { width: auto; height: 100vh; }
+#waiting {
+  position: absolute; bottom: 12px; left: 0; right: 0; margin: 0;
+  text-align: center; color: #fff; font-size: 13px; text-shadow: 0 1px 3px #000;
+}
+#waiting[hidden] { display: none; }

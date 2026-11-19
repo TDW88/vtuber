@@ -60,7 +60,7 @@ const TEMPLATE = `
       <!-- body -->
       <g id="av-body">
         <path fill="#e9ae8d" d="M448,680 L576,680 L576,830 L448,830 Z"/>
-        <path fill="#1f0f3c" d="M130,1140 L130,905 C210,832 358,790 512,790 C666,790 814,832 894,905 L894,1140 Z"/>
+        <path fill="#1f0f3c" d="M40,1320 C60,990 250,792 512,790 C774,792 964,990 984,1320 Z"/>
         <path fill="none" stroke="#ff7ac8" stroke-width="7" stroke-linecap="round"
               d="M378,811 C430,852 594,852 646,811"/>
         <circle cx="280" cy="915" r="8" fill="#fde68a"/>
@@ -184,9 +184,16 @@ export function createAvatar(container) {
     }),
   };
 
-  function setBadge(on) {
-    el.badge.style.display = on ? '' : 'none';
-    if (on) el.character.setAttribute('clip-path', 'url(#av-badge-clip)');
+  // 'badge' = circle + sparkles (original look); 'gradient' = sparkles only,
+  // for a full-bleed background; anything else = character only.
+  const sparkles = svg.querySelector('.av-sparkles');
+  const badgeDiscs = [...el.badge.querySelectorAll(':scope > circle')];
+  function setBackground(mode) {
+    const badge = mode === 'badge';
+    el.badge.style.display = badge || mode === 'gradient' ? '' : 'none';
+    badgeDiscs.forEach((c) => { c.style.display = badge ? '' : 'none'; });
+    sparkles.style.display = badge || mode === 'gradient' ? '' : 'none';
+    if (badge) el.character.setAttribute('clip-path', 'url(#av-badge-clip)');
     else el.character.removeAttribute('clip-path');
   }
 
@@ -287,5 +294,5 @@ export function createAvatar(container) {
     el.blushR.setAttribute('opacity', clamp(blush, 0, 0.8).toFixed(2));
   }
 
-  return { svg, update, setBadge };
+  return { svg, update, setBackground };
 }

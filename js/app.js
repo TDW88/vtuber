@@ -1,5 +1,6 @@
 import { createAvatar } from './avatar.js';
 import { createVoice } from './audio.js';
+import { applyStageBackground } from './background.js';
 
 const $ = (s) => document.querySelector(s);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -18,6 +19,7 @@ const DEFAULTS = {
   customColor: '#00ff00',
   showPreview: true,
   showMesh: false,
+  trackFps: 30,
 };
 let settings = { ...DEFAULTS };
 try { Object.assign(settings, JSON.parse(localStorage.getItem('vtuber-settings') || '{}')); } catch {}
@@ -95,7 +97,7 @@ function addCalibSample(f) {
     cx: avg('cx'), cy: avg('cy'), eyeDist: avg('eyeDist'),
   };
   calibSamples = [];
-  setStatus('Calibrated. Press C any time to recalibrate.', 'ok');
+  if (/^(Calibrating|Tracking)/.test(statusEl.textContent)) setStatus('Calibrated. Press C any time to recalibrate.', 'ok');
 }
 
 function applyFace(f) {
@@ -190,15 +192,33 @@ function drawOverlay(face) {
 let last = performance.now();
 let manualBlush = 0;
 
+let lastDetectAt = 0;
+const channel = 'BroadcastChannel' in window ? new BroadcastChannel('vtuber-output') : null;
+
+// requestAnimationFrame stops when the tab is hidden (e.g. you switch to the
+// Google Meet tab). A worker timer keeps the avatar alive in the background.
+let rafPending = false;
+function scheduleNext() {
+  if (!document.hidden && !rafPending) {
+    rafPending = true;
+    requestAnimationFrame((ts) => { rafPending = false; frame(ts); });
+  }
+}
+const ticker = new Worker(URL.createObjectURL(new Blob(
+  ['setInterval(() => postMessage(0), 33);'], { type: 'text/javascript' })));
+ticker.onmessage = () => { if (document.hidden) frame(performance.now()); };
+document.addEventListener('visibilitychange', scheduleNext);
+
 function frame(now) {
-  const dt = Math.min(0.1, (now - last) / 1000);
+  const dt = Math.min(0.1, Math.max(0, (now - last) / 1000));
   last = now;
   const t = now / 1000;
 
-  if (window.vtuber && window.vtuber.paused) { requestAnimationFrame(frame); return; }
+  if (window.vtuber && window.vtuber.paused) { scheduleNext(); return; }
 
-  // Face
-  if (tracker && camStream) {
+  // Face (rate-capped to leave CPU for the video call)
+  if (tracker && camStream && now - lastDetectAt >= 1000 / settings.trackFps - 2) {
+    lastDetectAt = now;
     try {
       const r = tracker.detect(video, now);
       if (r.fresh) {
@@ -247,19 +267,39 @@ function frame(now) {
   state.blush += (manualBlush - state.blush) * 0.1;
 
   avatar.update(state);
-  requestAnimationFrame(frame);
+  if (channel) channel.postMessage({ state, bg: settings.background, customColor: settings.customColor });
+  scheduleNext();
 }
 
 // ---------- UI wiring ----------
 function applyBackground() {
-  const stage = $('#stage');
-  const bg = settings.background;
-  avatar.setBadge(bg === 'badge');
-  const colors = { badge: '', green: '#00ff00', blue: '#0047bb', magenta: '#ff00ff', dark: '#14101f', transparent: 'transparent', custom: settings.customColor };
-  stage.style.background = colors[bg] ?? '';
-  stage.dataset.bg = bg;
-  document.body.dataset.transparent = bg === 'transparent' ? 'true' : 'false';
-  $('#custom-color').hidden = bg !== 'custom';
+  applyStageBackground($('#stage'), avatar, settings.background, settings.customColor);
+  $('#custom-color').hidden = settings.background !== 'custom';
+}
+
+function openOutputWindow() {
+  const w = window.open('output.html', 'vtuber-output',
+    'popup=yes,width=1280,height=720,menubar=no,toolbar=no,location=no,status=no');
+  if (!w) setStatus('Pop-up blocked — allow pop-ups for this page, then try again.', 'warn');
+  return w;
+}
+
+function setupForMeet() {
+  // Behave like a real webcam: others see the avatar move the way they'd see you move.
+  settings.mirror = false;
+  settings.showPreview = false;
+  settings.trackFps = 24;
+  if (settings.background === 'badge') settings.background = 'gradient';
+  save();
+  $('#mirror').checked = false;
+  $('#show-preview').checked = false;
+  $('#preview').hidden = true;
+  $('#track-fps').value = '24';
+  $('#background').value = settings.background;
+  applyBackground();
+  applyMirror();
+  openOutputWindow();
+  setStatus('Meet setup applied. In OBS: Window Capture "VTuber Output" → Start Virtual Camera → pick "OBS Virtual Camera" in Meet. Use headphones.', 'ok');
 }
 
 function applyMirror() {
@@ -295,6 +335,10 @@ bindCheck('show-preview', 'showPreview', () => { $('#preview').hidden = !setting
 bindCheck('show-mesh', 'showMesh');
 bindSelect('lip-source', 'lipSource');
 bindSelect('background', 'background', applyBackground);
+$('#track-fps').value = String(settings.trackFps);
+$('#track-fps').addEventListener('change', (e) => { settings.trackFps = +e.target.value; save(); });
+$('#open-output').addEventListener('click', openOutputWindow);
+$('#meet-setup').addEventListener('click', setupForMeet);
 $('#custom-color').value = settings.customColor;
 $('#custom-color').addEventListener('input', (e) => { settings.customColor = e.target.value; save(); applyBackground(); });
 
@@ -340,4 +384,4 @@ if (!navigator.mediaDevices || !window.isSecureContext) {
 // Exposed for debugging / automation.
 window.vtuber = { avatar, state, target, settings };
 
-requestAnimationFrame(frame);
+scheduleNext();
